@@ -1,30 +1,37 @@
 const express = require('express');
 const path = require('path');
-const members = require('./Members');
 const logger = require('./middleware/logger');
-
+const exphbs = require('express-handlebars');
+const members = require('./Members')
 const app = express();
 
 // Use Middleware
 app.use(logger);
 
-//get all members
-app.get('/api/members', (req, res) => {
-  res.json(members);
-});
+//Handlebars middleware
+app.engine('handlebars', exphbs({defaultLayout:'main'}));
+app.set('view engine', 'handlebars');
 
-// get a member
-app.get('/api/members/:id', (req, res) => {
-  const found = members.some(member => member.id === parseInt(req.params.id));
-  if (found) {
-    res.json(members.filter(member => member.id === parseInt(req.params.id)));
-  } else {
-    res.status(400).json({ msg: `No member with id of ${req.params.id}` });
-  }
-});
+
+//body parser middleware
+app.use(express.json());
+app.use(
+  express.urlencoded({
+    extended: false
+  })
+);
+
+
+//home page route
+app.get('/',(req,res)=>{
+  res.render('index',{title:'Member app',members})
+})
 
 //set static folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+//members API routes
+app.use('/api/members', require('./routes/api/members'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
